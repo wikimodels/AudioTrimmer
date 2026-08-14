@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "audiotrimmer"
+version = "0.1.0"
+description = "Classic stylish audio trimmer with waveform, trim handles and MP3 export"
+authors = ["Vitali <vitali@example.com>"]
+readme = "README.md"
+packages = [{ include = "audiotrimmer" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+PySide6 = "^6.6"
+pydub = "^0.25"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+audiotrimmer = "audiotrimmer.main:main"

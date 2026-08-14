@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.inst.log
+.inst.err.log
+logs/
+config.json
+server.log
+server.err.log

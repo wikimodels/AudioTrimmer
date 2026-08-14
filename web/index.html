@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AudioTrimmer</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<input type="file" id="fileInput" accept=".m4a,.mp3,.wav,.flac,.ogg,.opus,.aac,.wma,.aiff,.aif,audio/*" hidden>
+<header>
+  <span class="title">AudioTrimmer</span>
+  <span id="fileLabel" class="file">no file loaded</span>
+  <button id="openBtn">Open&hellip;</button>
+  <span id="smart">
+    <button id="btnCenterPos" title="Jump playhead to center of screen">&#9678;</button>
+    <button id="btnCenterSel" title="Move trim selection to center (150 px)">&#9640;</button>
+  </span>
+  <span id="transport">
+    <button id="btnPlay" title="Play / Pause (Space)">&#9654;</button>
+    <button id="btnPause" title="Pause">&#10073;&#10073;</button>
+    <button id="btnStop" title="Stop">&#9632;</button>
+    <button id="btnJump" title="Jump to start of selection">&#8617;</button>
+  </span>
+  <button id="gear" title="Settings">&#9881;</button>
+</header>
+<main>
+  <canvas id="wave"></canvas>
+  <div id="controls">
+    <button id="zoomOut" title="Zoom out">&minus;</button>
+    <button id="zoomIn" title="Zoom in">&#43;</button>
+    <button id="fit" title="Fit whole file (Ctrl+0)">&#8862;</button>
+    <span id="time">0:00.0 / 0:00.0</span>
+    <span id="volLbl">&#9829;</span>
+    <input id="volume" type="range" min="0" max="100" value="70">
+    <span class="spacer"></span>
+    <select id="bitrate">
+      <option value="128k">128 kbps</option>
+      <option value="192k" selected>192 kbps</option>
+      <option value="320k">320 kbps</option>
+    </select>
+    <button id="export" class="primary">Export MP3</button>
+  </div>
+  <div id="row2">
+    <span id="selTime" class="mono">Selection: 0:00.0 &ndash; 0:00.0 &nbsp;&middot;&nbsp; 0:00.0</span>
+    <span class="spacer"></span>
+  </div>
+  <div id="status"></div>
+</main>
+<div id="overlay" class="hidden">
+  <div class="panel">
+    <div class="panelHead">
+      <h3>Settings</h3>
+      <button id="closeX" title="Close">&times;</button>
+    </div>
+    <label>Source (where tracks come from)</label>
+    <div class="row"><input id="cfgSource" type="text"><button id="setSource">Save</button></div>
+    <label>Output (where exported MP3 go)</label>
+    <div class="row"><input id="cfgOutput" type="text"><button id="setOutput">Save</button></div>
+  </div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

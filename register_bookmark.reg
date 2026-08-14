@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Classes\audiotrimmer]
+@="URL:AudioTrimmer Protocol"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\audiotrimmer\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\audiotrimmer\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\audiotrimmer\shell\open\command]
+@="wscript.exe \"D:\\GitHub\\AudioTrimmer\\run_silent.vbs\""
