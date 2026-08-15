@@ -24,6 +24,12 @@ header {
 #btnCenterPos:hover { background: #3a2a18; }
 #btnCenterSel { background: #12241f; border-color: #1e4a3c; color: #5dd6b0; }
 #btnCenterSel:hover { background: #1b3328; }
+#anchors { display: flex; gap: 6px; padding-right: 8px; border-right: 1px solid #2c3340; }
+#anchors button { display: inline-flex; align-items: center; justify-content: center; }
+#btnStartAnchor { background: #12241f; border-color: #1e4a3c; color: #5dd6b0; }
+#btnStartAnchor:hover { background: #1b3328; }
+#btnEndAnchor { background: #261b12; border-color: #5a3d1c; color: #ffb347; }
+#btnEndAnchor:hover { background: #3a2a18; }
 button {
   background: #1f2430; color: #e6e8ee;
   border: 1px solid #2c3340; border-radius: 6px;

@@ -74,7 +74,8 @@ class TransportButton(QPushButton):
         self.setFixedSize(42, 40)
         self.setCursor(Qt.PointingHandCursor)
         self.setFocusPolicy(Qt.NoFocus)
-        self.setToolTip({"play": "Play", "pause": "Pause", "stop": "Stop", "jump": "Jump to selection start"}[kind])
+        self.setToolTip({"play": "Play", "pause": "Pause", "stop": "Stop", "jump": "Jump to selection start",
+                            "selstart": "Set trim START at playhead", "selend": "Set trim END at playhead"}[kind])
 
     def enterEvent(self, e):
         self._hover = True
@@ -91,8 +92,8 @@ class TransportButton(QPushButton):
         p.setPen(Qt.NoPen)
         p.setBrush(QColor(PANEL_HOVER if self._hover else PANEL))
         p.drawRoundedRect(r, 9, 9)
-        p.setPen(QPen(QColor(ACCENT if self._kind != "stop" else SEL), 0))
-        p.setBrush(QColor(ACCENT if self._kind != "stop" else SEL))
+        p.setPen(QPen(QColor(SEL if self._kind in ("stop", "selstart", "jump") else ACCENT), 0))
+        p.setBrush(QColor(SEL if self._kind in ("stop", "selstart", "jump") else ACCENT))
         cx = self.width() / 2
         cy = self.height() / 2
         if self._kind == "play":
@@ -107,6 +108,14 @@ class TransportButton(QPushButton):
             p.drawPolygon([QPoint(cx + 6, cy - 7), QPoint(cx - 4, cy), QPoint(cx + 6, cy + 7)])
             p.setPen(Qt.NoPen)
             p.drawRect(int(cx - 10), int(cy - 3), 2, 6)
+        elif self._kind == "selstart":
+            p.setPen(Qt.NoPen)
+            p.drawRect(int(cx - 12), int(cy - 7), 2, 14)
+            p.drawPolygon([QPoint(cx + 9, cy - 6), QPoint(cx - 3, cy), QPoint(cx + 9, cy + 6)])
+        elif self._kind == "selend":
+            p.setPen(Qt.NoPen)
+            p.drawRect(int(cx + 10), int(cy - 7), 2, 14)
+            p.drawPolygon([QPoint(cx - 9, cy - 6), QPoint(cx + 3, cy), QPoint(cx - 9, cy + 6)])
 
 
 class _Bridge(QObject):
@@ -191,6 +200,12 @@ class MainWindow(QMainWindow):
         open_btn.setShortcut("Ctrl+O")
         open_btn.clicked.connect(self._open)
         tv.addWidget(open_btn)
+        self._btn_sel_start = TransportButton("selstart")
+        self._btn_sel_end = TransportButton("selend")
+        self._btn_sel_start.clicked.connect(self._set_trim_start)
+        self._btn_sel_end.clicked.connect(self._set_trim_end)
+        tv.addWidget(self._btn_sel_start)
+        tv.addWidget(self._btn_sel_end)
         gear = QPushButton("⚙")
         gear.setFixedSize(34, 34)
         gear.setFocusPolicy(Qt.NoFocus)
@@ -475,6 +490,26 @@ class MainWindow(QMainWindow):
         a, _ = self._waveview.selection()
         self._player.setPosition(a)
         self._waveview.set_position(a)
+        self._update_labels()
+
+    def _set_trim_start(self) -> None:
+        if not self._audio:
+            return
+        pos = max(0, min(self._player.position(), self._audio.duration_ms))
+        a, b = self._waveview.selection()
+        if pos > b:
+            b = pos  # start pressed after end -> end follows the start
+        self._waveview.set_selection(pos, b)
+        self._update_labels()
+
+    def _set_trim_end(self) -> None:
+        if not self._audio:
+            return
+        pos = max(0, min(self._player.position(), self._audio.duration_ms))
+        a, b = self._waveview.selection()
+        if pos < a:
+            a = pos  # end pressed before start -> end follows the start
+        self._waveview.set_selection(a, pos)
         self._update_labels()
 
     def _nudge(self, delta: int) -> None:

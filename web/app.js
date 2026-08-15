@@ -459,6 +459,20 @@ $("btnCenterSel").onclick = () => {
   state.sel = [a, b];
   updateTime(); draw();
 };
+$("btnStartAnchor").onclick = () => {
+  if (!state.buffer) return;
+  const pos = Math.max(0, Math.min(state.pos, state.durMs));
+  if (pos > state.sel[1]) state.sel[1] = pos; // start pressed after end -> end follows the start
+  state.sel[0] = pos;
+  updateTime(); draw();
+};
+$("btnEndAnchor").onclick = () => {
+  if (!state.buffer) return;
+  const pos = Math.max(0, Math.min(state.pos, state.durMs));
+  if (pos < state.sel[0]) state.sel[0] = pos; // end pressed before start -> end follows the start
+  state.sel[1] = pos;
+  updateTime(); draw();
+};
 
 window.addEventListener("keydown", (e) => {
   if (e.code === "Space" && state.buffer) {
