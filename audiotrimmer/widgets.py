@@ -88,6 +88,10 @@ class WaveformWidget(QWidget):
     def selection(self) -> tuple[int, int]:
         return self._sel
 
+    def ensure_visible(self, ms: int) -> None:
+        """Pan the view so the given position is on screen (center it if off-screen)."""
+        self._ensure_visible(ms, HANDLE_W * 2 + 6)
+
     def zoom_fit(self) -> None:
         self._fit_view()
 

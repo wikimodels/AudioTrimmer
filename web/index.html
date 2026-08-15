@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>AudioTrimmer</title>
 <link rel="icon" href="/favicon.ico">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=2">
 </head>
 <body>
 <input type="file" id="fileInput" accept=".m4a,.mp3,.wav,.flac,.ogg,.opus,.aac,.wma,.aiff,.aif,audio/*" hidden>
@@ -21,6 +21,8 @@
     <button id="btnEndAnchor" title="Set trim END at playhead"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M19 4v16M6 12h11M13 7.5 18 12l-5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </span>
   <span id="transport">
+    <button id="btnSkipStart" title="Skip to start of track"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M5 5v14M9.5 5v14M15.5 6.5 9 12l6.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button id="btnSkipEnd" title="Skip to end of track"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M19 5v14M14.5 5v14M8.5 6.5 15 12l-6.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button id="btnPlay" title="Play / Pause (Space)">&#9654;</button>
     <button id="btnPause" title="Pause">&#10073;&#10073;</button>
     <button id="btnStop" title="Stop">&#9632;</button>
@@ -49,8 +51,8 @@
     <span id="selTime" class="mono">Selection: 0:00.0 &ndash; 0:00.0 &nbsp;&middot;&nbsp; 0:00.0</span>
     <span class="spacer"></span>
   </div>
-  <div id="status"></div>
 </main>
+<div id="snackbar"></div>
 <div id="overlay" class="hidden">
   <div class="panel">
     <div class="panelHead">
@@ -63,6 +65,6 @@
     <div class="row"><input id="cfgOutput" type="text"><button id="setOutput">Save</button></div>
   </div>
 </div>
-<script src="/app.js"></script>
+<script src="/app.js?v=2"></script>
 </body>
 </html>

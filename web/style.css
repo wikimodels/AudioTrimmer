@@ -62,7 +62,18 @@ select {
   border: 1px solid #2c3340; border-radius: 6px;
   padding: 5px 8px;
 }
-#status { height: 26px; padding: 4px 16px; color: #8a91a3; font-size: 9pt; }
+#snackbar {
+  position: fixed; top: 64px; right: 16px; z-index: 1000;
+  background: #1d2430; border: 1px solid #2c3340; border-radius: 10px;
+  color: #e6e8ee; padding: 10px 16px; font-size: 11pt;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  max-width: 380px; word-break: break-word;
+  opacity: 0; transform: translateY(-8px); pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+}
+#snackbar.show { opacity: 1; transform: translateY(0); }
+#snackbar.ok { border-color: #3d9c6e; color: #7fe0ac; }
+#snackbar.err { border-color: #e04444; color: #ff9a9a; }
 #overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.55);
   display: flex; align-items: center; justify-content: center;

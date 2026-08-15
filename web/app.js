@@ -41,6 +41,14 @@ function resize() {
 
 function setFit() { state.viewStart = 0; state.ppx = fitPpx(); draw(); requestPeaks(); }
 
+function ensurePlayheadVisible() {
+  const span = (width() - 2 * PAD) * state.ppx;
+  if (!state.ppx || span <= 0 || span >= state.durMs) return;
+  if (state.pos < state.viewStart || state.pos > state.viewStart + span) {
+    state.viewStart = Math.max(0, Math.min(state.pos - span / 2, state.durMs - span));
+  }
+}
+
 function clampView() {
   const span = (width() - 2 * PAD) * state.ppx;
   state.viewStart = Math.max(0, Math.min(state.viewStart, Math.max(0, state.durMs - span)));
@@ -342,9 +350,9 @@ async function loadFile(file) {
     $("fileLabel").textContent = `${file.name}   ·   ${(state.durMs / 1000).toFixed(1)}s`;
     setFit();
     updateTime();
-    showStatus(`Loaded ${file.name}`);
+    showStatus(`Loaded ${file.name}`, "ok");
   } catch (err) {
-    showStatus(`Could not load ${file.name}: ${err}`);
+    showStatus(`Could not load ${file.name}: ${err}`, "err");
   }
 }
 
@@ -385,6 +393,20 @@ $("btnPlay").addEventListener("click", () => {
   if (!state.buffer) return;
   if (state.playing) { pausePlayback(); } else { seekPlay(state.pos); }
 });
+$("btnSkipStart").addEventListener("click", () => {
+  if (!state.buffer) return;
+  state.pos = 0;
+  if (state.playing) seekPlay(0); else updateTime();
+  ensurePlayheadVisible();
+  draw();
+});
+$("btnSkipEnd").addEventListener("click", () => {
+  if (!state.buffer) return;
+  state.pos = state.durMs;
+  if (state.playing) seekPlay(state.durMs); else updateTime();
+  ensurePlayheadVisible();
+  draw();
+});
 $("btnPause").addEventListener("click", pausePlayback);
 $("btnStop").addEventListener("click", stopPlayback);
 $("btnJump").addEventListener("click", () => {
@@ -413,7 +435,7 @@ $("export").addEventListener("click", async () => {
     fd.append("end", String(b));
     fd.append("bitrate", $("bitrate").value);
     const r = await fetch("/api/export-upload", { method: "POST", body: fd }).then((x) => x.json());
-    showStatus(r.ok ? `Saved: ${r.file} (${r.path})` : `Export failed: ${r.error || ""}`);
+    showStatus(r.ok ? `Saved: ${r.file} (${r.path})` : `Export failed: ${r.error || ""}`, r.ok ? "ok" : "err");
   } finally { btn.disabled = false; }
 });
 
@@ -434,7 +456,7 @@ for (const key of ["setSource", "setOutput"]) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [field]: val }),
     }).then((x) => x.json());
-    showStatus(r.ok ? "Settings saved" : `Settings error: ${r.error || ""}`);
+    showStatus(r.ok ? "Settings saved" : `Settings error: ${r.error || ""}`, r.ok ? "ok" : "err");
   });
 }
 
@@ -484,7 +506,16 @@ window.addEventListener("keydown", (e) => {
   if (e.code === "Digit0" && e.ctrlKey) { e.preventDefault(); state.durMs && setFit(); }
 });
 
-function showStatus(msg) { $("status").textContent = msg; }
+let snackTimer = null;
+function showStatus(msg, kind = "") {
+  const sb = $("snackbar");
+  sb.textContent = msg;
+  sb.className = kind;
+  void sb.offsetWidth;
+  sb.classList.add("show");
+  clearTimeout(snackTimer);
+  snackTimer = setTimeout(() => sb.classList.remove("show"), 3200);
+}
 
 function loop() {
   requestAnimationFrame(loop);

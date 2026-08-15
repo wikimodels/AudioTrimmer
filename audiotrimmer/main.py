@@ -6,7 +6,18 @@ import os
 import threading
 from pathlib import Path
 
-from PySide6.QtCore import QMetaObject, QObject, Qt, QPoint, QUrl, Signal, Slot
+from PySide6.QtCore import (
+    QEasingCurve,
+    QMetaObject,
+    QObject,
+    QPoint,
+    QPropertyAnimation,
+    QTimer,
+    QUrl,
+    Qt,
+    Signal,
+    Slot,
+)
 from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QFont, QKeySequence, QPainter, QPen, QShortcut
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import (
@@ -15,6 +26,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QFormLayout,
+    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -59,7 +71,6 @@ QComboBox:hover {{ border-color: #333b4d; }}
 QComboBox QAbstractItemView {{ background: {PANEL}; color: {TEXT}; selection-background-color: #2c3a44; }}
 QSlider::groove:horizontal {{ height: 4px; background: #262c3a; border-radius: 2px; }}
 QSlider::handle:horizontal {{ width: 12px; height: 12px; margin: -4px 0; border-radius: 6px; background: {ACCENT}; }}
-QWidget#Status {{ background: {PANEL}; border-top: 1px solid #1f2430; color: {DIM}; padding: 4px 10px; font: 9pt 'Segoe UI'; }}
 QWidget#TopBar {{ background: {PANEL}; border-bottom: 1px solid #1f2430; }}
 """
 
@@ -75,7 +86,8 @@ class TransportButton(QPushButton):
         self.setCursor(Qt.PointingHandCursor)
         self.setFocusPolicy(Qt.NoFocus)
         self.setToolTip({"play": "Play", "pause": "Pause", "stop": "Stop", "jump": "Jump to selection start",
-                            "selstart": "Set trim START at playhead", "selend": "Set trim END at playhead"}[kind])
+                            "selstart": "Set trim START at playhead", "selend": "Set trim END at playhead",
+                            "tostart": "Skip to start of track", "toend": "Skip to end of track"}[kind])
 
     def enterEvent(self, e):
         self._hover = True
@@ -116,11 +128,81 @@ class TransportButton(QPushButton):
             p.setPen(Qt.NoPen)
             p.drawRect(int(cx + 10), int(cy - 7), 2, 14)
             p.drawPolygon([QPoint(cx - 9, cy - 6), QPoint(cx + 3, cy), QPoint(cx - 9, cy + 6)])
+        elif self._kind == "tostart":
+            p.setPen(Qt.NoPen)
+            p.drawRect(int(cx - 13), int(cy - 7), 2, 14)
+            p.drawRect(int(cx - 9), int(cy - 7), 2, 14)
+            p.drawPolygon([QPoint(cx + 8, cy - 6), QPoint(cx - 3, cy), QPoint(cx + 8, cy + 6)])
+        elif self._kind == "toend":
+            p.setPen(Qt.NoPen)
+            p.drawRect(int(cx + 7), int(cy - 7), 2, 14)
+            p.drawRect(int(cx + 11), int(cy - 7), 2, 14)
+            p.drawPolygon([QPoint(cx - 8, cy - 6), QPoint(cx + 3, cy), QPoint(cx - 8, cy + 6)])
 
 
 class _Bridge(QObject):
     peak_done = Signal(int, int, int, object)  # gen, start_ms, end_ms, data
     export_done = Signal(bool, str)
+
+
+class _Snackbar(QLabel):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self._effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self._effect)
+        self.setWordWrap(True)
+        self._effect.setOpacity(0.0)
+        self.hide()
+        self._anim = QPropertyAnimation(self._effect, b"opacity", self)
+        self._anim.setDuration(220)
+        self._anim.setEasingCurve(QEasingCurve.OutCubic)
+        self._anim.finished.connect(self._on_anim_done)
+        self._timer = QTimer(self)
+        self._timer.setSingleShot(True)
+        self._timer.timeout.connect(self._fade_out)
+        self._fading = False
+        self._base = (
+            "background:#1d2430;border:1px solid {c};border-radius:10px;"
+            "padding:10px 16px;color:{t};font:10pt 'Segoe UI';"
+        )
+
+    def show_msg(self, text: str, kind: str = "") -> None:
+        self._anim.stop()
+        self._timer.stop()
+        self._fading = False
+        if kind == "ok":
+            css = self._base.format(c="#3d9c6e", t="#7fe0ac")
+        elif kind == "err":
+            css = self._base.format(c="#e04444", t="#ff9a9a")
+        else:
+            css = self._base.format(c="#2c3340", t="#e6e8ee")
+        self.setStyleSheet(css)
+        self.setText(text.strip())
+        self.adjustSize()
+        self._place()
+        if self.isHidden():
+            self._effect.setOpacity(0.0)
+            self.show()
+        self._anim.setStartValue(self._effect.opacity())
+        self._anim.setEndValue(1.0)
+        self._anim.start()
+        self._timer.start(3400)
+
+    def _place(self) -> None:
+        r = self.parent().rect()
+        self.move(r.right() - self.width() - 16, 70)
+
+    def _fade_out(self) -> None:
+        self._fading = True
+        self._anim.setStartValue(self._effect.opacity())
+        self._anim.setEndValue(0.0)
+        self._anim.start()
+
+    def _on_anim_done(self) -> None:
+        if self._fading:
+            self.hide()
+            self._effect.setOpacity(0.0)
+            self._fading = False
 
 
 class MainWindow(QMainWindow):
@@ -148,6 +230,7 @@ class MainWindow(QMainWindow):
         self._player.positionChanged.connect(self._on_position)
 
         self._build_ui()
+        self._snack = _Snackbar(self)
 
         QShortcut(QKeySequence("Space"), self, activated=self._toggle_play)
         QShortcut(QKeySequence(Qt.Key_Left), self, activated=lambda: self._nudge(-1000))
@@ -206,6 +289,12 @@ class MainWindow(QMainWindow):
         self._btn_sel_end.clicked.connect(self._set_trim_end)
         tv.addWidget(self._btn_sel_start)
         tv.addWidget(self._btn_sel_end)
+        self._btn_to_start = TransportButton("tostart")
+        self._btn_to_end = TransportButton("toend")
+        self._btn_to_start.clicked.connect(self._skip_to_start)
+        self._btn_to_end.clicked.connect(self._skip_to_end)
+        tv.addWidget(self._btn_to_start)
+        tv.addWidget(self._btn_to_end)
         gear = QPushButton("⚙")
         gear.setFixedSize(34, 34)
         gear.setFocusPolicy(Qt.NoFocus)
@@ -284,18 +373,17 @@ class MainWindow(QMainWindow):
         h2.addWidget(self._export_btn)
         v.addWidget(row2)
 
-        # status
-        self._status = QLabel("")
-        self._status.setObjectName("Status")
-        self._status.setFixedHeight(26)
-        v.addWidget(self._status)
-
         self._update_labels()
+
+    def resizeEvent(self, ev) -> None:
+        super().resizeEvent(ev)
+        if hasattr(self, "_snack"):
+            self._snack._place()
 
     # ---- state ------------------------------------------------------------------
 
-    def _set_status(self, text: str) -> None:
-        self._status.setText("  " + text)
+    def _set_status(self, text: str, kind: str = "") -> None:
+        self._snack.show_msg(text, kind)
 
     def _update_labels(self) -> None:
         if not self._audio:
@@ -379,7 +467,7 @@ class MainWindow(QMainWindow):
                     return
             self._cfg[name] = str(path)
         save_config(self._cfg)
-        self._set_status(f"Settings saved: Source {self._cfg['source']} · Output {self._cfg['output']}")
+        self._set_status("Settings saved", "ok")
 
     def dragEnterEvent(self, e: QDragEnterEvent) -> None:
         urls = e.mimeData().urls()
@@ -398,7 +486,7 @@ class MainWindow(QMainWindow):
             af = open_audio(path)
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Open failed", f"Could not load file:\n{path}\n\n{exc}")
-            self._set_status(str(exc))
+            self._set_status(str(exc), "err")
             return
         self._audio = af
         self._player.stop()
@@ -408,7 +496,7 @@ class MainWindow(QMainWindow):
         self._file_label.setText(
             f"{af.filename}   ·   {af.duration_ms / 1000:.1f}s   ·   {af.frame_rate} Hz   ·   {af.channels} ch"
         )
-        self._set_status(f"Loaded {af.filename}")
+        self._set_status(f"Loaded {af.filename}", "ok")
         self._update_labels()
         self._request_peaks()
 
@@ -512,6 +600,23 @@ class MainWindow(QMainWindow):
         self._waveview.set_selection(a, pos)
         self._update_labels()
 
+    def _skip_to_start(self) -> None:
+        if not self._audio:
+            return
+        self._player.setPosition(0)
+        self._waveview.set_position(0)
+        self._waveview.ensure_visible(0)
+        self._update_labels()
+
+    def _skip_to_end(self) -> None:
+        if not self._audio:
+            return
+        dur = self._audio.duration_ms
+        self._player.setPosition(dur)
+        self._waveview.set_position(dur)
+        self._waveview.ensure_visible(dur)
+        self._update_labels()
+
     def _nudge(self, delta: int) -> None:
         if not self._audio:
             return
@@ -563,10 +668,10 @@ class MainWindow(QMainWindow):
     def _on_export_done(self, ok: bool, info: str) -> None:
         self._export_btn.setEnabled(True)
         if ok:
-            self._set_status("Export finished")
+            self._set_status("Export finished", "ok")
             QMessageBox.information(self, "Export finished", f"Saved to:\n{info}")
         else:
-            self._set_status("Export failed")
+            self._set_status("Export failed", "err")
             QMessageBox.critical(self, "Export failed", info)
 
 
