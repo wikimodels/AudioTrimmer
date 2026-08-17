@@ -6,8 +6,8 @@ from pathlib import Path
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
 
 DEFAULTS = {
-    "source": r"C:\Users\Vitali\Downloads\YandexMusic",
-    "output": r"C:\Users\Vitali\Downloads\TrimmedAudio",
+    "source": r"C:\Users\Vitali\Downloads\AIMusicTools\YandexMusic",
+    "output": r"C:\Users\Vitali\Downloads\AIMusicTools\TrimmedAudio",
 }
 
 
