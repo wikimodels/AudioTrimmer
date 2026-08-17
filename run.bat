@@ -11,5 +11,4 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8001 " ^| findstr "LISTENIN
 timeout /t 2 /nobreak >nul
 
 echo [*] Starting server at http://localhost:8001
-start "" "http://localhost:8001"
 poetry run python web/server.py > server.log 2>&1
